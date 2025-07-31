@@ -46,5 +46,7 @@ export function useAuthWithRetry() {
     getToken: getTokenWithRetry,
     isRetrying,
     retryCount,
+    orgId: undefined,
+    orgRole: undefined,
   };
 } 

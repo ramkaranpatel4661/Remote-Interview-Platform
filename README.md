@@ -1,24 +1,49 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Remote Interview Platform
+
+A comprehensive remote interview platform built with Next.js, Convex, Clerk, and Stream Video. This application provides a complete solution for conducting technical interviews with real-time video calls, code editing, and interview management.
+
+## Features
+
+- **Real-time Video Calls**: Powered by Stream Video
+- **Code Editor**: Monaco Editor with multiple language support
+- **Interview Scheduling**: Schedule and manage interviews
+- **Role-based Access**: Separate interfaces for interviewers and candidates
+- **Interview Management**: Track interview status, add comments, and ratings
+- **Recording Management**: Access and manage interview recordings
+- **Authentication**: Secure authentication with Clerk
+
+## Environment Variables
+
+Create a `.env.local` file in the root directory with the following variables:
+
+```env
+# Clerk Authentication
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key_here
+CLERK_WEBHOOK_SECRET=your_clerk_webhook_secret_here
+
+# Convex Database
+NEXT_PUBLIC_CONVEX_URL=your_convex_url_here
+
+# Stream Video
+NEXT_PUBLIC_STREAM_API_KEY=your_stream_api_key_here
+STREAM_SECRET_KEY=your_stream_secret_key_here
+```
 
 ## Getting Started
 
-First, run the development server:
+First, install the dependencies:
+
+```bash
+npm install
+```
+
+Then, run the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
 ## Learn More
 

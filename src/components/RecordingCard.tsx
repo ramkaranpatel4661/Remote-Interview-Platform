@@ -22,7 +22,7 @@ function RecordingCard({ recording }: { recording: CallRecording }) {
 
   const duration =
     recording.start_time && recording.end_time
-      ? calculateRecordingDuration(recording.start_time, recording.end_time)
+      ? calculateRecordingDuration(new Date(recording.start_time).getTime(), new Date(recording.end_time).getTime())
       : "Unknown duration";
 
   return (
