@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
-import { Doc, Id } from "../../../../convex/_generated/dataModel";
+import { Id } from "../../../../convex/_generated/dataModel";
 import toast from "react-hot-toast";
 import LoaderUI from "@/components/LoaderUI";
 import { getCandidateInfo, groupInterviews } from "@/lib/utils";
@@ -18,8 +18,6 @@ import CommentDialog from "@/components/CommentDialog";
 import DashboardStats from "@/components/DashboardStats";
 import UserRoleManager from "@/components/UserRoleManager";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
-type Interview = Doc<"interviews">;
 
 function DashboardPage() {
   const users = useQuery(api.users.getUsers);
@@ -81,7 +79,7 @@ function DashboardPage() {
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {groupedInterviews[category.id].map((interview: Interview) => {
+                    {groupedInterviews[category.id].map((interview) => {
                       const candidateInfo = getCandidateInfo(users, interview.candidateId);
                       const startTime = new Date(interview.startTime);
 

@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
+import { Doc } from "../../convex/_generated/dataModel"
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -102,10 +103,7 @@ export function getCandidateInfo(users: User[], candidateId: string): UserInfo {
   };
 }
 
-interface Interview {
-  startTime: number;
-  status?: string;
-}
+type Interview = Doc<"interviews">;
 
 interface InterviewGroups {
   today: Interview[];
