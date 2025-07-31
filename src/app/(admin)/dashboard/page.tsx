@@ -12,12 +12,11 @@ import { INTERVIEW_CATEGORY } from "@/constants";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { CalendarIcon, CheckCircle2Icon, ClockIcon, XCircleIcon, UsersIcon, SettingsIcon } from "lucide-react";
+import { CalendarIcon, CheckCircle2Icon, ClockIcon, XCircleIcon } from "lucide-react";
 import { format } from "date-fns";
 import CommentDialog from "@/components/CommentDialog";
 import DashboardStats from "@/components/DashboardStats";
 import UserRoleManager from "@/components/UserRoleManager";
-import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 type Interview = Doc<"interviews">;
@@ -31,7 +30,7 @@ function DashboardPage() {
     try {
       await updateStatus({ id: interviewId, status });
       toast.success(`Interview marked as ${status}`);
-    } catch (error) {
+    } catch {
       toast.error("Failed to update status");
     }
   };

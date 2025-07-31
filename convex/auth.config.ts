@@ -1,7 +1,7 @@
 export default {
   providers: [
     {
-      domain: "https://thankful-porpoise-79.clerk.accounts.dev/",
+      domain: process.env.CLERK_DOMAIN || "https://thankful-porpoise-79.clerk.accounts.dev/",
       applicationID: "convex",
     },
   ],

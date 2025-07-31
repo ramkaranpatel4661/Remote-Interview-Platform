@@ -38,8 +38,22 @@ export function calculateRecordingDuration(startTime: number, endTime: number): 
   return `${minutes}:${seconds.toString().padStart(2, '0')}`;
 }
 
+interface User {
+  clerkId: string;
+  name: string;
+  email: string;
+  image?: string;
+}
+
+interface UserInfo {
+  name: string;
+  email: string;
+  image: string;
+  initials: string;
+}
+
 // Function to get interviewer information
-export function getInterviewerInfo(users: any[], interviewerId: string) {
+export function getInterviewerInfo(users: User[], interviewerId: string): UserInfo {
   const interviewer = users?.find(user => user.clerkId === interviewerId);
   if (!interviewer) {
     return {
@@ -58,13 +72,13 @@ export function getInterviewerInfo(users: any[], interviewerId: string) {
   return {
     name: interviewer.name,
     email: interviewer.email,
-    image: interviewer.image,
+    image: interviewer.image || "",
     initials
   };
 }
 
 // Function to get candidate information
-export function getCandidateInfo(users: any[], candidateId: string) {
+export function getCandidateInfo(users: User[], candidateId: string): UserInfo {
   const candidate = users?.find(user => user.clerkId === candidateId);
   if (!candidate) {
     return {
@@ -83,26 +97,40 @@ export function getCandidateInfo(users: any[], candidateId: string) {
   return {
     name: candidate.name,
     email: candidate.email,
-    image: candidate.image,
+    image: candidate.image || "",
     initials
   };
 }
 
+interface Interview {
+  startTime: number;
+  status?: string;
+}
+
+interface InterviewGroups {
+  today: Interview[];
+  tomorrow: Interview[];
+  upcoming: Interview[];
+  past: Interview[];
+  completed: Interview[];
+  succeeded: Interview[];
+  failed: Interview[];
+}
+
 // Function to group interviews
-export function groupInterviews(interviews: any[]) {
-  const now = Date.now();
+export function groupInterviews(interviews: Interview[]): InterviewGroups {
   const today = new Date();
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
   
-  const groups = {
-    today: [] as any[],
-    tomorrow: [] as any[],
-    upcoming: [] as any[],
-    past: [] as any[],
-    completed: [] as any[],
-    succeeded: [] as any[],
-    failed: [] as any[]
+  const groups: InterviewGroups = {
+    today: [],
+    tomorrow: [],
+    upcoming: [],
+    past: [],
+    completed: [],
+    succeeded: [],
+    failed: []
   };
 
   interviews.forEach(interview => {

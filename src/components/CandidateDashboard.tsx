@@ -10,7 +10,6 @@ import {
   CalendarIcon, 
   ClockIcon, 
   CheckCircleIcon, 
-  XCircleIcon,
   AlertCircleIcon,
   TrendingUpIcon,
   BookOpenIcon,
@@ -19,7 +18,6 @@ import {
 import { format } from "date-fns";
 import { getMeetingStatus } from "@/lib/utils";
 import MeetingCard from "./MeetingCard";
-import Link from "next/link";
 import { useUser } from "@clerk/nextjs";
 
 function CandidateDashboard() {
@@ -193,7 +191,7 @@ function CandidateDashboard() {
               <VideoIcon className="h-12 w-12 text-muted-foreground mb-4" />
               <h3 className="text-lg font-semibold mb-2">No interviews scheduled</h3>
               <p className="text-muted-foreground text-center mb-4">
-                You don't have any interviews scheduled yet. Check back later or contact your recruiter.
+                You don&apos;t have any interviews scheduled yet. Check back later or contact your recruiter.
               </p>
               <Button variant="outline">
                 <BookOpenIcon className="h-4 w-4 mr-2" />

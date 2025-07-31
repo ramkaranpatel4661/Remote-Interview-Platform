@@ -9,11 +9,12 @@ export function useAuthWithRetry() {
   const getTokenWithRetry = async (options?: { template?: string }) => {
     try {
       return await getToken(options);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Token retrieval error:", error);
       
       // If it's a timing issue and we haven't retried too many times
       if (
+        error instanceof Error && 
         error.message?.includes("AuthErrorTokenUsedBeforeIssuedAt") &&
         retryCount < 3
       ) {

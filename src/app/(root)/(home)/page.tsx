@@ -9,15 +9,12 @@ import { api } from "../../../../convex/_generated/api";
 import { useRouter } from "next/navigation";
 import MeetingModal from "@/components/MeetingModal";
 import LoaderUI from "@/components/LoaderUI";
-import { Loader2Icon } from "lucide-react";
-import MeetingCard from "@/components/MeetingCard";
 import CandidateDashboard from "@/components/CandidateDashboard";
 
 export default function Home() {
   const router = useRouter();
 
-  const { isInterviewer, isCandidate, isLoading } = useUserRole();
-  const interviews = useQuery(api.interviews.getMyInterviews);
+  const { isInterviewer, isLoading } = useUserRole();
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState<"start" | "join">();
 
