@@ -10,8 +10,11 @@ http.route({
   path: "/clerk-webhook",
   method: "POST",
   handler: httpAction(async (ctx, request) => {
+    console.log("Webhook received:", request.method, request.url);
+    
     const webhookSecret = process.env.CLERK_WEBHOOK_SECRET;
     if (!webhookSecret) {
+      console.error("Missing CLERK_WEBHOOK_SECRET environment variable");
       throw new Error("Missing CLERK_WEBHOOK_SECRET environment variable");
     }
 
@@ -43,12 +46,20 @@ http.route({
     }
 
     const eventType = evt.type;
+    console.log("Webhook event received:", eventType);
 
-    if (eventType === "user.created") {
+    if (eventType === "user.created" || eventType === "user.updated") {
       const { id, email_addresses, first_name, last_name, image_url } = evt.data;
 
+      if (!email_addresses || email_addresses.length === 0) {
+        console.log("No email addresses found for user:", id);
+        return new Response("No email addresses found", { status: 400 });
+      }
+
       const email = email_addresses[0].email_address;
-      const name = `${first_name || ""} ${last_name || ""}`.trim();
+      const name = `${first_name || ""} ${last_name || ""}`.trim() || email;
+
+      console.log("Processing user webhook:", { id, email, name, eventType });
 
       try {
         await ctx.runMutation(api.users.syncUser, {
@@ -57,13 +68,26 @@ http.route({
           name,
           image: image_url,
         });
+        console.log("User synced successfully:", { id, email });
       } catch (error) {
-        console.log("Error creating user:", error);
+        console.error("Error creating user:", error);
         return new Response("Error creating user", { status: 500 });
       }
+    } else {
+      console.log("Unhandled webhook event type:", eventType);
     }
 
     return new Response("Webhook processed successfully", { status: 200 });
+  }),
+});
+
+// Test endpoint to verify webhook is working
+http.route({
+  path: "/test-webhook",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    console.log("Test webhook endpoint hit");
+    return new Response("Webhook endpoint is working", { status: 200 });
   }),
 });
 

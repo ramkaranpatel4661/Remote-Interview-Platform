@@ -38,15 +38,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ConvexClerkProvider>
-      <html lang="en" suppressHydrationWarning>
-        <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-          >
+    <html lang="en" suppressHydrationWarning>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <ConvexClerkProvider>
+          <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
             <ErrorBoundary>
               <SignedIn>
                 <div className="min-h-screen">
@@ -59,10 +54,10 @@ export default function RootLayout({
                 <RedirectToSignIn />
               </SignedOut>
             </ErrorBoundary>
+            <Toaster />
           </ThemeProvider>
-          <Toaster />
-        </body>
-      </html>
-    </ConvexClerkProvider>
+        </ConvexClerkProvider>
+      </body>
+    </html>
   );
 }

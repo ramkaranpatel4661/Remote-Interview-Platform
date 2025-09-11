@@ -2,12 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { useUser } from "@clerk/nextjs";
-import { useStreamVideoClient } from "@stream-io/video-react-sdk";
+import { VideoPreview, useCall, useStreamVideoClient } from "@stream-io/video-react-sdk";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-import { Loader2Icon, VideoIcon, MicIcon, MicOffIcon, VideoOffIcon } from "lucide-react";
+import { Loader2Icon, MicIcon, MicOffIcon, VideoIcon, VideoOffIcon } from "lucide-react";
 
 function MeetingSetup({ onSetupComplete }: { onSetupComplete: () => void }) {
   const { user } = useUser();
@@ -15,27 +15,31 @@ function MeetingSetup({ onSetupComplete }: { onSetupComplete: () => void }) {
   const [isLoading, setIsLoading] = useState(false);
   const [hasAudio, setHasAudio] = useState(true);
   const [hasVideo, setHasVideo] = useState(true);
+  const call = useCall();
 
   useEffect(() => {
-    // Always call hooks, but conditionally execute logic
-    if (client && user) {
-      // Setup logic here
+    if (hasAudio) {
+      call?.microphone.enable();
+    } else {
+      call?.microphone.disable();
     }
-  }, [client, user]);
+  }, [hasAudio, call?.microphone]);
 
   useEffect(() => {
-    // Always call hooks, but conditionally execute logic
-    if (client) {
-      // Additional setup logic here
+    if (hasVideo) {
+      call?.camera.enable();
+    } else {
+      call?.camera.disable();
     }
-  }, [client]);
+  }, [hasVideo, call?.camera]);
 
   const handleJoin = async () => {
     if (!client || !user) return;
-    
+
     setIsLoading(true);
     try {
-      // Join meeting logic
+      if (!call) throw new Error("useCall must be used within StreamCall component");
+      await call.join();
       onSetupComplete();
     } catch (error) {
       console.error("Failed to join meeting:", error);
@@ -43,6 +47,8 @@ function MeetingSetup({ onSetupComplete }: { onSetupComplete: () => void }) {
       setIsLoading(false);
     }
   };
+
+  if (!client || !call) return null;
 
   return (
     <div className="h-full flex items-center justify-center p-6">
@@ -54,38 +60,34 @@ function MeetingSetup({ onSetupComplete }: { onSetupComplete: () => void }) {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div className="aspect-video rounded-md bg-muted overflow-hidden">
+            <VideoPreview className="size-full" />
+          </div>
           <div className="space-y-2">
             <Label>Your Name</Label>
-            <Input 
-              value={user?.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : ''} 
-              disabled 
-            />
+            <Input value={user?.firstName ? `${user.firstName} ${user.lastName || ""}`.trim() : ""} disabled />
           </div>
 
           <div className="flex gap-4">
             <Button
-              variant={hasAudio ? "default" : "outline"}
+              variant={hasAudio ? "secondary" : "destructive"}
               onClick={() => setHasAudio(!hasAudio)}
               className="flex-1"
             >
-              {hasAudio ? <MicIcon className="h-4 w-4" /> : <MicOffIcon className="h-4 w-4" />}
-              {hasAudio ? "Mute" : "Unmute"}
+              {hasAudio ? <MicIcon className="h-4 w-4 mr-2" /> : <MicOffIcon className="h-4 w-4 mr-2" />}
+              {hasAudio ? "Mic On" : "Mic Off"}
             </Button>
             <Button
-              variant={hasVideo ? "default" : "outline"}
+              variant={hasVideo ? "secondary" : "destructive"}
               onClick={() => setHasVideo(!hasVideo)}
               className="flex-1"
             >
-              {hasVideo ? <VideoIcon className="h-4 w-4" /> : <VideoOffIcon className="h-4 w-4" />}
-              {hasVideo ? "Stop Video" : "Start Video"}
+              {hasVideo ? <VideoIcon className="h-4 w-4 mr-2" /> : <VideoOffIcon className="h-4 w-4 mr-2" />}
+              {hasVideo ? "Cam On" : "Cam Off"}
             </Button>
           </div>
 
-          <Button 
-            onClick={handleJoin} 
-            disabled={isLoading}
-            className="w-full"
-          >
+          <Button onClick={handleJoin} disabled={isLoading} className="w-full">
             {isLoading ? (
               <>
                 <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />

@@ -12,10 +12,35 @@ if (!process.env.NEXT_PUBLIC_CONVEX_URL) {
 const convex = new ConvexReactClient(process.env.NEXT_PUBLIC_CONVEX_URL);
 
 function ConvexClerkProvider({ children }: { children: React.ReactNode }) {
+  const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+  
+  console.log("Environment check:");
+  console.log("NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY:", publishableKey ? "Set" : "Missing");
+  console.log("NEXT_PUBLIC_CONVEX_URL:", process.env.NEXT_PUBLIC_CONVEX_URL ? "Set" : "Missing");
+  console.log("NEXT_PUBLIC_CLERK_PROXY_URL:", process.env.NEXT_PUBLIC_CLERK_PROXY_URL ? "Set" : "Missing");
+  
+  // Check if we're in development
+  console.log("NODE_ENV:", process.env.NODE_ENV);
+  
+  if (!publishableKey) {
+    console.error("❌ NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY is missing!");
+    console.error("Please add it to your .env.local file");
+    return (
+      <div className="p-8 text-center">
+        <h2 className="text-xl font-bold text-red-600 mb-4">Configuration Error</h2>
+        <p className="text-gray-600 mb-4">
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY is missing from your environment variables.
+        </p>
+        <p className="text-sm text-gray-500">
+          Check the console for more details and configure your .env.local file.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <ClerkProvider 
-      publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY || ""}
-      // Add these options to handle token timing issues
+      publishableKey={publishableKey}
       appearance={{
         elements: {
           formButtonPrimary: "bg-blue-500 hover:bg-blue-600",

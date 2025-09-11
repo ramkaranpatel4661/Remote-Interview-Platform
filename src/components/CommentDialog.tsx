@@ -1,4 +1,6 @@
-import { useState } from "react";
+"use client";
+
+import { useEffect, useState } from "react";
 import { Id } from "../../convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
@@ -49,6 +51,13 @@ function CommentDialog({ interviewId }: { interviewId: Id<"interviews"> }) {
       toast.error("Failed to submit comment");
     }
   };
+
+  useEffect(() => {
+    if (!isOpen) {
+      setComment("");
+      setRating("3");
+    }
+  }, [isOpen]);
 
   const renderStars = (rating: number) => (
     <div className="flex gap-0.5">

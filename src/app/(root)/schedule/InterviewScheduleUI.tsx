@@ -1,7 +1,7 @@
 import { useUser } from "@clerk/nextjs";
 import { useStreamVideoClient } from "@stream-io/video-react-sdk";
 import { useMutation, useQuery } from "convex/react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { api } from "../../../../convex/_generated/api";
 import toast from "react-hot-toast";
 import {
@@ -36,9 +36,24 @@ function InterviewScheduleUI() {
   const interviews = useQuery(api.interviews.getAllInterviews) ?? [];
   const users = useQuery(api.users.getUsers) ?? [];
   const createInterview = useMutation(api.interviews.createInterview);
+  const syncUser = useMutation(api.users.syncUser);
 
-  const candidates = users?.filter((u) => u.role === "candidate");
+  const candidates = users?.filter((u) => u.role === "candidate" || !u.role);
   const interviewers = users?.filter((u) => u.role === "interviewer");
+
+  // Debug logging
+  console.log("Users from database:", users);
+  console.log("Candidates filtered:", candidates);
+  console.log("Interviewers filtered:", interviewers);
+  
+  // Debug display in UI
+  const debugInfo = {
+    totalUsers: users?.length || 0,
+    candidatesCount: candidates?.length || 0,
+    interviewersCount: interviewers?.length || 0,
+    users: users?.map(u => ({ name: u.name, role: u.role, email: u.email })) || []
+  };
+
 
   const [formData, setFormData] = useState({
     title: "",
@@ -49,10 +64,44 @@ function InterviewScheduleUI() {
     interviewerIds: user?.id ? [user.id] : [],
   });
 
+  // Sync current user to database
+  useEffect(() => {
+    if (user?.id && user?.primaryEmailAddress?.emailAddress) {
+      const userName = user.firstName && user.lastName 
+        ? `${user.firstName} ${user.lastName}` 
+        : user.primaryEmailAddress.emailAddress;
+      
+      syncUser({
+        name: userName,
+        email: user.primaryEmailAddress.emailAddress,
+        clerkId: user.id,
+        image: user.imageUrl || undefined
+      }).catch(console.error);
+    }
+  }, [user, syncUser]);
+
+  // Automatically include current user as interviewer if they are an interviewer
+  useEffect(() => {
+    if (user?.id && interviewers.length > 0) {
+      const currentUserInDb = interviewers.find(interviewer => interviewer.clerkId === user.id);
+      
+      if (currentUserInDb && !formData.interviewerIds.includes(user.id)) {
+        setFormData(prev => ({
+          ...prev,
+          interviewerIds: [...prev.interviewerIds, user.id]
+        }));
+      }
+    }
+  }, [user?.id, interviewers, formData.interviewerIds]);
+
   const scheduleMeeting = async () => {
     if (!client || !user) return;
     if (!formData.candidateId || formData.interviewerIds.length === 0) {
       toast.error("Please select both candidate and at least one interviewer");
+      return;
+    }
+    if (!formData.title.trim()) {
+      toast.error("Please enter an interview title");
       return;
     }
 
@@ -138,6 +187,22 @@ function InterviewScheduleUI() {
         <div>
           <h1 className="text-3xl font-bold">Interviews</h1>
           <p className="text-muted-foreground mt-1">Schedule and manage interviews</p>
+          
+          {/* DEBUG INFO */}
+          <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <h3 className="font-semibold text-sm mb-2">Debug Info:</h3>
+            <p className="text-sm">Total Users: {debugInfo.totalUsers}</p>
+            <p className="text-sm">Candidates: {debugInfo.candidatesCount}</p>
+            <p className="text-sm">Interviewers: {debugInfo.interviewersCount}</p>
+            <div className="mt-2">
+              <p className="text-sm font-medium">Users:</p>
+              {debugInfo.users.map((user, index) => (
+                <p key={index} className="text-xs ml-2">
+                  {user.name} ({user.email}) - {user.role}
+                </p>
+              ))}
+            </div>
+          </div>
         </div>
 
         {/* DIALOG */}
@@ -176,21 +241,27 @@ function InterviewScheduleUI() {
               {/* CANDIDATE */}
               <div className="space-y-2">
                 <label className="text-sm font-medium">Candidate</label>
-                <Select
-                  value={formData.candidateId}
-                  onValueChange={(candidateId) => setFormData({ ...formData, candidateId })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select candidate" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {candidates.map((candidate) => (
-                      <SelectItem key={candidate.clerkId} value={candidate.clerkId}>
-                        <UserInfo user={candidate} />
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {candidates && candidates.length > 0 ? (
+                  <Select
+                    value={formData.candidateId}
+                    onValueChange={(candidateId) => setFormData({ ...formData, candidateId })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select candidate" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {candidates.map((candidate) => (
+                        <SelectItem key={candidate.clerkId} value={candidate.clerkId}>
+                          <UserInfo user={candidate} />
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <div className="p-3 border border-dashed rounded-lg text-center text-sm text-muted-foreground">
+                    No candidates available. Users need to sign up and be assigned candidate roles.
+                  </div>
+                )}
               </div>
 
               {/* INTERVIEWERS */}

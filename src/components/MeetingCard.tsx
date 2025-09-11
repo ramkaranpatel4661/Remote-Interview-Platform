@@ -1,3 +1,5 @@
+"use client";
+
 import useMeetingActions from "@/hooks/useMeetingActions";
 import { Doc } from "../../convex/_generated/dataModel";
 import { getMeetingStatus } from "@/lib/utils";

@@ -1,9 +1,8 @@
 "use client";
-
 import { useUser } from "@clerk/nextjs";
 import { useStreamVideoClient } from "@stream-io/video-react-sdk";
 import { useMutation, useQuery } from "convex/react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { api } from "../../convex/_generated/api";
 import toast from "react-hot-toast";
 import {
@@ -30,6 +29,26 @@ import { TIME_SLOTS } from "@/constants";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
+interface InterviewFormData {
+  title: string;
+  description: string;
+  date: Date;
+  time: string;
+  candidateId: string;
+  interviewerIds: string[];
+  duration: string;
+}
+
+const initialFormData: InterviewFormData = {
+  title: "",
+  description: "",
+  date: new Date(),
+  time: "09:00",
+  candidateId: "",
+  interviewerIds: [],
+  duration: "60",
+};
+
 function InterviewScheduler() {
   const client = useStreamVideoClient();
   const { user } = useUser();
@@ -39,24 +58,56 @@ function InterviewScheduler() {
   const interviews = useQuery(api.interviews.getAllInterviews) ?? [];
   const users = useQuery(api.users.getUsers) ?? [];
   const createInterview = useMutation(api.interviews.createInterview);
+  const syncUser = useMutation(api.users.syncUser);
 
-  const candidates = users?.filter((u) => u.role === "candidate");
+  const candidates = users?.filter((u) => u.role === "candidate" || !u.role);
   const interviewers = users?.filter((u) => u.role === "interviewer");
 
-  const [formData, setFormData] = useState({
-    title: "",
-    description: "",
-    date: new Date(),
-    time: "09:00",
-    candidateId: "",
-    interviewerIds: user?.id ? [user.id] : [],
-    duration: "60", // Default 60 minutes
-  });
+  // Debug logging
+  console.log("InterviewScheduler - Users from database:", users);
+  console.log("InterviewScheduler - Candidates filtered:", candidates);
+  console.log("InterviewScheduler - Interviewers filtered:", interviewers);
+
+  const [formData, setFormData] = useState<InterviewFormData>(initialFormData);
+
+  // Sync current user to database
+  useEffect(() => {
+    if (user?.id && user?.primaryEmailAddress?.emailAddress) {
+      const userName = user.firstName && user.lastName 
+        ? `${user.firstName} ${user.lastName}` 
+        : user.primaryEmailAddress.emailAddress;
+      
+      syncUser({
+        name: userName,
+        email: user.primaryEmailAddress.emailAddress,
+        clerkId: user.id,
+        image: user.imageUrl || undefined
+      }).catch(console.error);
+    }
+  }, [user, syncUser]);
+
+  // Automatically include current user as interviewer if they are an interviewer
+  useEffect(() => {
+    if (user?.id && interviewers.length > 0) {
+      const currentUserInDb = interviewers.find(interviewer => interviewer.clerkId === user.id);
+      
+      if (currentUserInDb && !formData.interviewerIds.includes(user.id)) {
+        setFormData(prev => ({
+          ...prev,
+          interviewerIds: [...prev.interviewerIds, user.id]
+        }));
+      }
+    }
+  }, [user?.id, interviewers, formData.interviewerIds]);
 
   const scheduleMeeting = async () => {
     if (!client || !user) return;
     if (!formData.candidateId || formData.interviewerIds.length === 0) {
       toast.error("Please select both candidate and at least one interviewer");
+      return;
+    }
+    if (!formData.title.trim()) {
+      toast.error("Please enter an interview title");
       return;
     }
 
@@ -94,15 +145,7 @@ function InterviewScheduler() {
       setOpen(false);
       toast.success("Interview scheduled successfully!");
 
-      setFormData({
-        title: "",
-        description: "",
-        date: new Date(),
-        time: "09:00",
-        candidateId: "",
-        interviewerIds: user?.id ? [user.id] : [],
-        duration: "60",
-      });
+      setFormData(initialFormData);
     } catch (error) {
       console.error(error);
       toast.error("Failed to schedule interview. Please try again.");
@@ -113,7 +156,7 @@ function InterviewScheduler() {
 
   const addInterviewer = (interviewerId: string) => {
     if (!formData.interviewerIds.includes(interviewerId)) {
-      setFormData((prev) => ({
+      setFormData(prev => ({
         ...prev,
         interviewerIds: [...prev.interviewerIds, interviewerId],
       }));
@@ -122,9 +165,9 @@ function InterviewScheduler() {
 
   const removeInterviewer = (interviewerId: string) => {
     if (interviewerId === user?.id) return;
-    setFormData((prev) => ({
+    setFormData(prev => ({
       ...prev,
-      interviewerIds: prev.interviewerIds.filter((id) => id !== interviewerId),
+      interviewerIds: prev.interviewerIds.filter(id => id !== interviewerId),
     }));
   };
 
@@ -177,7 +220,7 @@ function InterviewScheduler() {
                     <Input
                       placeholder="e.g., Frontend Developer - Technical Round"
                       value={formData.title}
-                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                      onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
                     />
                   </div>
 
@@ -186,7 +229,7 @@ function InterviewScheduler() {
                     <Textarea
                       placeholder="Describe the interview focus, topics, or special requirements..."
                       value={formData.description}
-                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                      onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                       rows={3}
                     />
                   </div>
@@ -202,21 +245,27 @@ function InterviewScheduler() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <Select
-                    value={formData.candidateId}
-                    onValueChange={(candidateId) => setFormData({ ...formData, candidateId })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Choose a candidate" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {candidates.map((candidate) => (
-                        <SelectItem key={candidate.clerkId} value={candidate.clerkId}>
-                          <UserInfo user={candidate} />
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  {candidates && candidates.length > 0 ? (
+                    <Select
+                      value={formData.candidateId}
+                      onValueChange={(candidateId) => setFormData(prev => ({ ...prev, candidateId }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Choose a candidate" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {candidates.map((candidate) => (
+                          <SelectItem key={candidate.clerkId} value={candidate.clerkId}>
+                            <UserInfo user={candidate} />
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <div className="p-4 border border-dashed rounded-lg text-center text-sm text-muted-foreground">
+                      No candidates available. Users need to sign up and be assigned candidate roles.
+                    </div>
+                  )}
                   
                   {selectedCandidate && (
                     <div className="mt-3 p-3 bg-muted/50 rounded-lg">
@@ -287,7 +336,7 @@ function InterviewScheduler() {
                       <Calendar
                         mode="single"
                         selected={formData.date}
-                        onSelect={(date) => date && setFormData({ ...formData, date })}
+                        onSelect={(date) => date && setFormData(prev => ({ ...prev, date }))}
                         disabled={(date) => date < new Date()}
                         className="rounded-md border"
                       />
@@ -298,7 +347,7 @@ function InterviewScheduler() {
                         <label className="text-sm font-medium">Time</label>
                         <Select
                           value={formData.time}
-                          onValueChange={(time) => setFormData({ ...formData, time })}
+                          onValueChange={(time) => setFormData(prev => ({ ...prev, time }))}
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="Select time" />
@@ -317,7 +366,7 @@ function InterviewScheduler() {
                         <label className="text-sm font-medium">Duration</label>
                         <Select
                           value={formData.duration}
-                          onValueChange={(duration) => setFormData({ ...formData, duration })}
+                          onValueChange={(duration) => setFormData(prev => ({ ...prev, duration }))}
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="Select duration" />

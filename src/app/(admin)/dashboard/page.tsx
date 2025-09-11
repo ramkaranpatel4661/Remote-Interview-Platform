@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { Id } from "../../../../convex/_generated/dataModel";
@@ -12,7 +13,7 @@ import { INTERVIEW_CATEGORY } from "@/constants";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { CalendarIcon, CheckCircle2Icon, ClockIcon, XCircleIcon } from "lucide-react";
+import { CalendarIcon, CheckCircle2Icon, ClockIcon, Loader2Icon, XCircleIcon } from "lucide-react";
 import { format } from "date-fns";
 import CommentDialog from "@/components/CommentDialog";
 import DashboardStats from "@/components/DashboardStats";
@@ -20,16 +21,22 @@ import UserRoleManager from "@/components/UserRoleManager";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 function DashboardPage() {
+  const [updatingInterviewId, setUpdatingInterviewId] = useState<Id<"interviews"> | null>(null);
   const users = useQuery(api.users.getUsers);
   const interviews = useQuery(api.interviews.getAllInterviews);
   const updateStatus = useMutation(api.interviews.updateInterviewStatus);
 
   const handleStatusUpdate = async (interviewId: Id<"interviews">, status: string) => {
+    setUpdatingInterviewId(interviewId);
+    const toastId = toast.loading("Updating status...");
     try {
       await updateStatus({ id: interviewId, status });
-      toast.success(`Interview marked as ${status}`);
-    } catch {
-      toast.error("Failed to update status");
+      toast.success(`Interview marked as ${status}`, { id: toastId });
+    } catch (error) {
+      console.error("Failed to update status:", error);
+      toast.error("Failed to update status", { id: toastId });
+    } finally {
+      setUpdatingInterviewId(null);
     }
   };
 
@@ -82,6 +89,7 @@ function DashboardPage() {
                     {groupedInterviews[category.id].map((interview) => {
                       const candidateInfo = getCandidateInfo(users, interview.candidateId);
                       const startTime = new Date(interview.startTime);
+                      const isUpdating = updatingInterviewId === interview._id;
 
                       return (
                         <Card key={interview._id} className="hover:shadow-md transition-all">
@@ -120,17 +128,23 @@ function DashboardPage() {
                                 <Button
                                   className="flex-1"
                                   onClick={() => handleStatusUpdate(interview._id, "succeeded")}
+                                  disabled={isUpdating}
                                 >
-                                  <CheckCircle2Icon className="h-4 w-4 mr-2" />
-                                  Pass
+                                  {isUpdating ? (
+                                    <Loader2Icon className="h-4 w-4 mr-2 animate-spin" />
+                                  ) : (
+                                    <CheckCircle2Icon className="h-4 w-4 mr-2" />
+                                  )}
+                                  {isUpdating ? "Updating..." : "Pass"}
                                 </Button>
                                 <Button
                                   variant="destructive"
                                   className="flex-1"
                                   onClick={() => handleStatusUpdate(interview._id, "failed")}
+                                  disabled={isUpdating}
                                 >
-                                  <XCircleIcon className="h-4 w-4 mr-2" />
-                                  Fail
+                                  {isUpdating ? <Loader2Icon className="h-4 w-4 mr-2 animate-spin" /> : <XCircleIcon className="h-4 w-4 mr-2" />}
+                                  {isUpdating ? "Updating..." : "Fail"}
                                 </Button>
                               </div>
                             )}

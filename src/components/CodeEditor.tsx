@@ -1,27 +1,50 @@
+"use client";
+
 import { CODING_QUESTIONS, LANGUAGES } from "@/constants";
-import { useState } from "react";
+import { useMutation, useQuery } from "convex/react";
+import { api } from "../../convex/_generated/api";
+import { Id } from "../../convex/_generated/dataModel";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "./ui/resizable";
 import { ScrollArea, ScrollBar } from "./ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { AlertCircleIcon, BookIcon, LightbulbIcon } from "lucide-react";
+import { AlertCircleIcon, BookIcon, LightbulbIcon, Loader2Icon } from "lucide-react";
 import Editor from "@monaco-editor/react";
 import Image from "next/image";
 
-function CodeEditor() {
-  const [selectedQuestion, setSelectedQuestion] = useState(CODING_QUESTIONS[0]);
-  const [language, setLanguage] = useState<"javascript" | "python" | "java">(LANGUAGES[0].id);
-  const [code, setCode] = useState(selectedQuestion.starterCode[language]);
+function CodeEditor({ interviewId }: { interviewId: Id<"interviews"> }) {
+  const codeSession = useQuery(api.codeSessions.getByInterviewId, { interviewId });
+  const updateCode = useMutation(api.codeSessions.updateCode);
+  const updateLanguage = useMutation(api.codeSessions.updateLanguage);
+  const updateQuestion = useMutation(api.codeSessions.updateQuestion);
+
+  if (!codeSession) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <Loader2Icon className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  const selectedQuestion = CODING_QUESTIONS.find((q) => q.id === codeSession.questionId)!;
+  const language = codeSession.language;
+  const code = codeSession.code;
 
   const handleQuestionChange = (questionId: string) => {
     const question = CODING_QUESTIONS.find((q) => q.id === questionId)!;
-    setSelectedQuestion(question);
-    setCode(question.starterCode[language]);
+    updateQuestion({
+      id: codeSession._id,
+      questionId,
+      starterCode: question.starterCode[language],
+    });
   };
 
   const handleLanguageChange = (newLanguage: "javascript" | "python" | "java") => {
-    setLanguage(newLanguage);
-    setCode(selectedQuestion.starterCode[newLanguage]);
+    updateLanguage({
+      id: codeSession._id,
+      language: newLanguage,
+      code: selectedQuestion.starterCode[newLanguage],
+    });
   };
 
   return (
@@ -174,7 +197,7 @@ function CodeEditor() {
             language={language}
             theme="vs-dark"
             value={code}
-            onChange={(value) => setCode(value || "")}
+            onChange={(value) => updateCode({ id: codeSession._id, code: value || "" })}
             options={{
               minimap: { enabled: false },
               fontSize: 18,

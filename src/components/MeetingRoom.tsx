@@ -1,14 +1,19 @@
+"use client";
+
 import {
   CallControls,
   CallingState,
   CallParticipantsList,
   PaginatedGridLayout,
   SpeakerLayout,
+  useCall,
   useCallStateHooks,
 } from "@stream-io/video-react-sdk";
 import { LayoutListIcon, LoaderIcon, UsersIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useQuery } from "convex/react";
+import { api } from "../../convex/_generated/api";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "./ui/resizable";
 import {
   DropdownMenu,
@@ -25,10 +30,15 @@ function MeetingRoom() {
   const [layout, setLayout] = useState<"grid" | "speaker">("speaker");
   const [showParticipants, setShowParticipants] = useState(false);
   const { useCallCallingState } = useCallStateHooks();
+  const call = useCall();
 
   const callingState = useCallCallingState();
 
-  if (callingState !== CallingState.JOINED) {
+  const interview = useQuery(api.interviews.getInterviewByStreamCallId, {
+    streamCallId: call?.id || "",
+  });
+
+  if (callingState !== CallingState.JOINED || !interview) {
     return (
       <div className="h-96 flex items-center justify-center">
         <LoaderIcon className="size-6 animate-spin" />
@@ -85,7 +95,7 @@ function MeetingRoom() {
                     <UsersIcon className="size-4" />
                   </Button>
 
-                  <EndCallButton />
+                  <EndCallButton interviewId={interview._id} />
                 </div>
               </div>
             </div>
@@ -95,7 +105,7 @@ function MeetingRoom() {
         <ResizableHandle withHandle />
 
         <ResizablePanel defaultSize={65} minSize={25}>
-          <CodeEditor />
+          <CodeEditor interviewId={interview._id} />
         </ResizablePanel>
       </ResizablePanelGroup>
     </div>

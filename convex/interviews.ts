@@ -1,10 +1,18 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 
+const defaultStarterCode = `function solve(nums, target) {
+    // Write your code here
+    
+};`;
+
 export const getAllInterviews = query({
   handler: async (ctx) => {
     const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Unauthorized");
+    if (!identity) {
+      console.log("No user identity found - user not authenticated");
+      return [];
+    }
 
     const interviews = await ctx.db.query("interviews").collect();
 
@@ -50,9 +58,18 @@ export const createInterview = mutation({
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new Error("Unauthorized");
 
-    return await ctx.db.insert("interviews", {
+    const interviewId = await ctx.db.insert("interviews", {
       ...args,
     });
+
+    await ctx.db.insert("codeSessions", {
+      interviewId,
+      questionId: "two-sum", // Default question
+      code: defaultStarterCode,
+      language: "javascript",
+    });
+
+    return interviewId;
   },
 });
 

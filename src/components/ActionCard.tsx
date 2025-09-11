@@ -1,11 +1,6 @@
 import { QuickActionType } from "@/constants";
 import { Card } from "./ui/card";
-
-// some weird tw bug, but this is how it works
-// from-orange-500/10 via-orange-500/5 to-transparent
-// from-blue-500/10 via-blue-500/5 to-transparent
-// from-purple-500/10 via-purple-500/5 to-transparent
-// from-primary/10 via-primary/5 to-transparent
+import { cn } from "@/lib/utils";
 
 function ActionCard({ action, onClick }: { action: QuickActionType; onClick: () => void }) {
   return (
@@ -14,18 +9,31 @@ function ActionCard({ action, onClick }: { action: QuickActionType; onClick: () 
       onClick={onClick}
     >
       {/* ACTION GRADIENT */}
-      <div
-        className={`absolute inset-0 bg-gradient-to-br ${action.gradient} opacity-100 group-hover:opacity-50 transition-opacity`}
-      />
+      <div className={cn("absolute inset-0 bg-gradient-to-br opacity-100 group-hover:opacity-50 transition-opacity", action.gradient)} />
 
       {/* ACTION CONTENT WRAPPER */}
       <div className="relative p-6 size-full">
         <div className="space-y-3">
           {/* ACTION ICON */}
           <div
-            className={`w-12 h-12 rounded-full flex items-center justify-center bg-${action.color}/10 group-hover:scale-110 transition-transform`}
+            className={cn(
+              "w-12 h-12 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform",
+              {
+                "bg-primary/10": action.color === "primary",
+                "bg-orange-500/10": action.color === "orange-500",
+                "bg-blue-500/10": action.color === "blue-500",
+                "bg-purple-500/10": action.color === "purple-500",
+              }
+            )}
           >
-            <action.icon className={`h-6 w-6 text-${action.color}`} />
+            <action.icon
+              className={cn("h-6 w-6", {
+                "text-primary": action.color === "primary",
+                "text-orange-500": action.color === "orange-500",
+                "text-blue-500": action.color === "blue-500",
+                "text-purple-500": action.color === "purple-500",
+              })}
+            />
           </div>
 
           {/* ACTION DETAILS */}
